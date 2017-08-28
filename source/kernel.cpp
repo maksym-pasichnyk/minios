@@ -4,18 +4,18 @@
 enum : uint8_t { DISPLAY_MAX_COUNT = 1 };
 
 struct Console {
-  uint32_t bgcol;
-  uint32_t fgcol;
-  uint32_t x;
-  uint32_t y;
+	uint32_t bgcol;
+	uint32_t fgcol;
+	uint32_t x;
+	uint32_t y;
 };
 
 struct Display {
-  Terminal terminals[DISPLAY_MAX_COUNT];
+	Terminal terminals[DISPLAY_MAX_COUNT];
 
-  static void Set(uint8_t id) {
-    terminals[id]->set(id);
-  }
+	static void Set(uint8_t id) {
+		terminals[id]->set(id);
+	}
 };
 
 DISPLAY *textmode_init() {
@@ -23,7 +23,7 @@ DISPLAY *textmode_init() {
 }
 
 typedef struct {
-    uint32_t eax, ebx, ecx, edx, esi, edi, esp, ebp, eip, eflags, cr3;
+	uint32_t eax, ebx, ecx, edx, esi, edi, esp, ebp, eip, eflags, cr3;
 } Registers;
 
 void syscall() {
@@ -35,21 +35,22 @@ void syscall() {
 	asm volatile("movl %%ecx, %0":"=m"(ecx));
 	asm volatile("movl %%edx, %0":"=m"(edx));
 
-  switch (eax) {
+	switch (eax) {
 
-  }
+	}
 
-  asm volatile("popa");
-  asm volatile("iret");
+	asm volatile("popa");
+	asm volatile("iret");
 }
 
-void set_int(int i, uint32_t addr){
-  *(uint16_t*)(0x2000 + 8 * i + 0) = (uint16_t)(addr & 0x0000ffff);
+void set_int(int i, uint32_t addr) {
+	*(uint16_t*)(0x2000 + 8 * i + 0) = (uint16_t)(addr & 0x0000ffff);
 }
+
 void syscal_init() {
 	set_int(0x80, (uint32_t)syscall);
 }
 
 extern "C" void kernel_main() {
-  Display::Set(0);
+	Display::Set(0);
 }
