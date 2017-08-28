@@ -169,16 +169,10 @@ parse_precision:
 parse_length_modifier:
 		switch (c) {
 		case 'h':
-			if (r & LENGTH_SHORT)
-				r |= LENGTH_CHAR;
-			else
-				r |= LENGTH_SHORT;
+			r |= r & LENGTH_SHORT ? LENGTH_CHAR : LENGTH_SHORT;
 			break;
 		case 'l':
-			if (r & LENGTH_LONG)
-				r |= LENGTH_LONGLONG;
-			else
-				r |= LENGTH_LONG;
+			r |= r & LENGTH_LONG ? LENGTH_LONGLONG : LENGTH_LONG;
 			break;
 		case 'j':
 			r |= LENGTH_INTMAX;
@@ -219,8 +213,7 @@ parse_conversion:
 		r |= CONVERSION_CHARP;
 		break;
 	case 'p':
-		r |= CONVERSION_VOIDP | CONVERSION_HEXADECIMAL |
-			FLAG_ALTERNATE_FORM;
+		r |= CONVERSION_VOIDP | CONVERSION_HEXADECIMAL | FLAG_ALTERNATE_FORM;
 		break;
 	case '%':
 		r |= CONVERSION_NONE;
@@ -237,8 +230,9 @@ static int valconv (unsigned long long val, char *buf, unsigned long long *sub, 
 		*buf++ = '0';
 		return 1;
 	}
-	while (val < *sub)
+	while (val < *sub) {
 		sub++;
+	}
 	while (*sub) {
 		digit = 0;
 		while (val >= *sub) {
@@ -262,28 +256,26 @@ static int do_conversion_int (unsigned long long val, int f, int width, int prec
 		PUTCHAR ((int)val);
 		return n;
 	}
-	if ((f & HAS_PRECISION) && precision == 0 && val == 0)
+	if ((f & HAS_PRECISION) && precision == 0 && val == 0) {
 		return 0;
-	if (f & CONVERSION_DECIMAL)
+	}
+	if (f & CONVERSION_DECIMAL) {
 		len = valconv (val, buf, sub10, "0123456789");
-	else if (f & CONVERSION_OCTAL)
+	} else if (f & CONVERSION_OCTAL) {
 		len = valconv (val, buf, sub8, "01234567");
-	else if ((f & CONVERSION_HEXADECIMAL) && (f & CONVERSION_CAPITAL))
+	} else if ((f & CONVERSION_HEXADECIMAL) && (f & CONVERSION_CAPITAL)) {
 		len = valconv (val, buf, sub16, "0123456789ABCDEF");
-	else if (f & CONVERSION_HEXADECIMAL)
+	} else if (f & CONVERSION_HEXADECIMAL)
 		len = valconv (val, buf, sub16, "0123456789abcdef");
-	if ((f & HAS_PRECISION) && precision > len)
+	if ((f & HAS_PRECISION) && precision > len) {
 		leftzero = precision - len;
-	if (!(f & CONVERSION_DECIMAL) &&
-	    (f & FLAG_ALTERNATE_FORM) && val != 0) {
+	}
+	if (!(f & CONVERSION_DECIMAL) && (f & FLAG_ALTERNATE_FORM) && val != 0) {
 		if ((f & CONVERSION_OCTAL) && leftzero == 0) {
 			leftbuf = "0";
 			leftlen = 1;
 		} else if (f & CONVERSION_HEXADECIMAL) {
-			if (f & CONVERSION_CAPITAL)
-				leftbuf = "0X";
-			else
-				leftbuf = "0x";
+			leftbuf = f & CONVERSION_CAPITAL ? "0X" : "0x";
 			leftlen = 2;
 		}
 	}
@@ -302,26 +294,32 @@ static int do_conversion_int (unsigned long long val, int f, int width, int prec
 		}
 	}
 	if ((f & HAS_WIDTH) && width > leftlen + leftzero + len) {
-		if (f & FLAG_LEFT_ADJUSTED)
+		if (f & FLAG_LEFT_ADJUSTED) {
 			rightsp = width - (leftlen + leftzero + len);
-		else
+		} else {
 			leftsp = width - (leftlen + leftzero + len);
+		}
 	}
 	if ((f & FLAG_ZERO_PADDED) && !(f & HAS_PRECISION)) {
 		leftzero += leftsp;
 		leftsp = 0;
 	}
 	bufp = buf;
-	while (leftsp--)
+	while (leftsp--) {
 		PUTCHAR (' ');
-	while (leftlen--)
+	}
+	while (leftlen--) {
 		PUTCHAR (*leftbuf++);
-	while (leftzero--)
+	}
+	while (leftzero--) {
 		PUTCHAR ('0');
-	while (len--)
+	}
+	while (len--) {
 		PUTCHAR (*bufp++);
-	while (rightsp--)
+	}
+	while (rightsp--) {
 		PUTCHAR (' ');
+	}
 error:
 	return n;
 }
@@ -332,20 +330,25 @@ static int do_conversion_string (const char *str, int f, int width, int precisio
 	int leftsp = 0, rightsp = 0;
 
 	len = 0;
-	while (!((f & HAS_PRECISION) && len >= precision) && str[len] != '\0')
+	while (!((f & HAS_PRECISION) && len >= precision) && str[len] != '\0') {
 		len++;
-	if ((f & HAS_WIDTH) && width > len) {
-		if (f & FLAG_LEFT_ADJUSTED)
-			rightsp = width - len;
-		else
-			leftsp = width - len;
 	}
-	while (leftsp--)
+	if ((f & HAS_WIDTH) && width > len) {
+		if (f & FLAG_LEFT_ADJUSTED) {
+			rightsp = width - len;
+		} else {
+			leftsp = width - len;
+		}
+	}
+	while (leftsp--) {
 		PUTCHAR (' ');
-	while (len--)
+	}
+	while (len--) {
 		PUTCHAR (*str++);
-	while (rightsp--)
+	}
+	while (rightsp--) {
 		PUTCHAR (' ');
+	}
 error:
 	return n;
 }
@@ -359,12 +362,13 @@ static int do_printf (const char *format, va_list ap, int (*func)(int c, void *d
 	while ((c = *format++) != '\0') {
 		if (c == '%') {
 			f = parse_format (&format, &width, &precision);
-			if (f & LENGTH_INTMAX)
+			if (f & LENGTH_INTMAX) {
 				f |= LENGTH_LONGLONG;
-			else if (f & LENGTH_SIZE)
+			} else if (f & LENGTH_SIZE) {
 				f |= LENGTH_LONG;
-			else if (f & LENGTH_PTRDIFF)
+			} else if (f & LENGTH_PTRDIFF) {
 				f |= LENGTH_LONG;
+			}
 			if (f == END_STRING) {
 				break;
 			} else if (f & CONVERSION_NONE) {
@@ -395,24 +399,25 @@ static int do_printf (const char *format, va_list ap, int (*func)(int c, void *d
 			} else if (f & CONVERSION_UINT) {
 				unsigned long long uintval;
 
-				if (f & LENGTH_CHAR)
+				if (f & LENGTH_CHAR) {
 					uintval = (unsigned long long) va_arg (ap, unsigned int);
-				else if (f & LENGTH_SHORT)
-					uintval = (unsigned long long)
-						va_arg (ap, unsigned int);
-				else if (f & LENGTH_LONGLONG)
+				} else if (f & LENGTH_SHORT) {
+					uintval = (unsigned long long) va_arg (ap, unsigned int);
+				} else if (f & LENGTH_LONGLONG) {
 					uintval = va_arg (ap, unsigned long long);
-				else if (f & LENGTH_LONG)
+				} else if (f & LENGTH_LONG) {
 					uintval = (unsigned long long) va_arg (ap, unsigned long);
-				else
+				} else {
 					uintval = (unsigned long long) va_arg (ap, unsigned int);
+				}
 				n += do_conversion_int (uintval, f, width, precision, func, data);
 			} else if (f & CONVERSION_VOIDP) {
 				n += do_conversion_int ((unsigned long long) (unsigned long)va_arg (ap, void *), f, width, precision, func, data);
 			} else if (f & CONVERSION_CHARP) {
 				char *charpval = va_arg (ap, char *);
-				if (charpval == NULL)
+				if (charpval == NULL) {
 					charpval = "(null)";
+				}
 				n += do_conversion_string (charpval, f, width, precision, func, data);
 			} else {
 				n += do_conversion_string ("FORMAT ERROR", CONVERSION_CHARP, 0, 0, func, data);
@@ -434,10 +439,12 @@ static int do_snputchar (int c, void *data) {
 	struct snputchar_data *p;
 
 	p = data;
-	if (!p->len)
+	if (!p->len) {
 		return -1;
-	if (!--p->len)
+	}
+	if (!--p->len) {
 		c = '\0';
+	}
 	*p->buf++ = (char)c;
 	return 0;
 }
